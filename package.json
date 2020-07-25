@@ -1,0 +1,20 @@
+{
+  "name": "express-jobly",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/colts18seth/Jobly.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/colts18seth/Jobly/issues"
+  },
+  "homepage": "https://github.com/colts18seth/Jobly#readme"
+}
