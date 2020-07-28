@@ -4,7 +4,6 @@ const ExpressError = require("../helpers/expressError");
 const partialUpdate = require("../helpers/partialUpdate");
 const jsonschema = require("jsonschema");
 const companySchema = require("../schemas/companySchema.json");
-const sqlForPartialUpdate = require("../helpers/partialUpdate");
 const companyRoutes = new express.Router();
 
 companyRoutes.get("/", async (req, res, next) => {
@@ -107,7 +106,7 @@ companyRoutes.patch("/:handle", async (req, res, next) => {
 
         const { handle } = req.params;
 
-        const patchResults = sqlForPartialUpdate("companies", req.body, "handle", handle.toUpperCase());
+        const patchResults = partialUpdate("companies", req.body, "handle", handle.toUpperCase());
 
         const results = await db.query(patchResults.query, patchResults.values);
 
