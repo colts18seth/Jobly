@@ -60,16 +60,38 @@ companyRoutes.get("/", async (req, res, next) => {
 
 companyRoutes.get("/:handle", async (req, res, next) => {
     try {
-        const { handle } = req.params;
         const results = await db.query(
-            `SELECT handle, name, num_employees, description, logo_url
-            FROM companies WHERE handle=$1`, [handle.toUpperCase()]
+            `SELECT c.handle, c.name, c.num_employees, c.description, c.logo_url, j.id, j.title, j.salary, j.equity, j.date_posted
+            FROM companies AS c
+            LEFT JOIN jobs AS j
+            ON c.handle = j.company_handle
+            WHERE handle=$1
+            `, [req.params.handle.toUpperCase()]
         );
         if (results.rowCount === 0) {
-            throw new ExpressError(`handle: "${handle}" doesn't exist`, 404);
+            throw new ExpressError(`handle: "${req.params.handle}" doesn't exist`, 404);
         }
 
-        return res.json({ company: results.rows[0] });
+        let { handle, name, num_employees, description, logo_url } = results.rows[0];
+        if (results.rows[0].id) {
+            let jobs = results.rows.map(j => {
+                return {
+                    id: j.id,
+                    title: j.title,
+                    salary: j.salary,
+                    equity: j.equity,
+                    date_posted: j.date_posted,
+                }
+            })
+
+            return res.json({
+                company: { handle, name, num_employees, description, logo_url, jobs }
+            })
+        } else {
+            return res.json({
+                company: { handle, name, num_employees, description, logo_url }
+            })
+        }
     }
     catch (err) {
         return next(err);
@@ -103,6 +125,12 @@ companyRoutes.post("/", async (req, res, next) => {
 
 companyRoutes.patch("/:handle", async (req, res, next) => {
     try {
+        const result = jsonschema.validate(req.body, companySchema);
+        if (!result.valid) {
+            let listOfErrors = result.errors.map(error => error.stack);
+            let error = new ExpressError(listOfErrors, 400);
+            return next(error);
+        }
 
         const { handle } = req.params;
 
@@ -114,7 +142,6 @@ companyRoutes.patch("/:handle", async (req, res, next) => {
             throw new ExpressError(`handle: "${handle}" doesn't exist`, 404);
         }
 
-        // return res.status(200).json({ company: results });
         return res.status(200).json({ company: results.rows[0] });
     }
     catch (err) {

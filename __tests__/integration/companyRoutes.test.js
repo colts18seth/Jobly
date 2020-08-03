@@ -240,7 +240,11 @@ describe("PATCH /companies/:handle", () => {
             const patchResults = await request(app)
                 .patch("/companies/goog")
                 .send({
-                    "description": "Updated Description"
+                    "handle": "GOOG",
+                    "name": "Google",
+                    "num_employees": 100,
+                    "description": "Updated Description",
+                    "logo_url": "google.com"
                 });
             expect(patchResults.statusCode).toBe(200);
             expect(patchResults.body).toEqual(
