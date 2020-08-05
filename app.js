@@ -6,12 +6,14 @@ const morgan = require("morgan");
 const companyRoutes = require("./routes/companies")
 const jobsRoutes = require("./routes/jobs")
 const usersRoutes = require("./routes/users")
+const loginRoute = require("./routes/login")
 const app = express();
 
 app.use(express.json());
 app.use("/companies", companyRoutes)
 app.use("/jobs", jobsRoutes)
 app.use("/users", usersRoutes)
+app.use("/login", loginRoute)
 
 // add logging system
 app.use(morgan("tiny"));

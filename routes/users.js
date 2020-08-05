@@ -4,12 +4,14 @@ const ExpressError = require("../helpers/expressError");
 const partialUpdate = require("../helpers/partialUpdate");
 const jsonschema = require("jsonschema");
 const usersSchema = require("../schemas/usersSchema.json");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const { SECRET_KEY } = require("../config");
 const usersRoutes = new express.Router();
 
 usersRoutes.post("/", async (req, res, next) => {
     try {
         const result = jsonschema.validate(req.body, usersSchema);
-
         if (!result.valid) {
             let listOfErrors = result.errors.map(error => error.stack);
             let error = new ExpressError(listOfErrors, 400);
@@ -17,14 +19,17 @@ usersRoutes.post("/", async (req, res, next) => {
         }
 
         const { username, password, first_name, last_name, email, photo_url, is_admin } = req.body;
+        const hashedPW = await bcrypt.hash(password, 12);
         const results = await db.query(
             `INSERT INTO users ( username, password, first_name, last_name, email, photo_url, is_admin)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING username, password, first_name, last_name, email, photo_url, is_admin`,
-            [username, password, first_name, last_name, email, photo_url, is_admin]
+            RETURNING username, is_admin`,
+            [username, hashedPW, first_name, last_name, email, photo_url, is_admin]
         );
+        let payload = { user: results.rows[0] };
+        let token = jwt.sign(payload, SECRET_KEY)
 
-        return res.status(201).json({ user: results.rows[0] });
+        return res.status(201).json({ token: token });
     }
     catch (err) {
         return next(err);
