@@ -3,13 +3,15 @@
 const express = require("express");
 const ExpressError = require("./helpers/expressError");
 const morgan = require("morgan");
-const companyRoutes = require("./routes/companies")
-const jobsRoutes = require("./routes/jobs")
-const usersRoutes = require("./routes/users")
-const loginRoute = require("./routes/login")
+const companyRoutes = require("./routes/companies");
+const jobsRoutes = require("./routes/jobs");
+const usersRoutes = require("./routes/users");
+const loginRoute = require("./routes/login");
+const { auth } = require("./routes/middleware/auth");
 const app = express();
 
 app.use(express.json());
+app.use(auth);
 app.use("/companies", companyRoutes)
 app.use("/jobs", jobsRoutes)
 app.use("/users", usersRoutes)

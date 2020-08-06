@@ -4,9 +4,11 @@ const ExpressError = require("../helpers/expressError");
 const partialUpdate = require("../helpers/partialUpdate");
 const jsonschema = require("jsonschema");
 const companySchema = require("../schemas/companySchema.json");
+const { ensureAdmin } = require("./middleware/ensureAdmin");
+const { ensureLoggedIn } = require("./middleware/ensureLoggedIn");
 const companyRoutes = new express.Router();
 
-companyRoutes.get("/", async (req, res, next) => {
+companyRoutes.get("/", ensureLoggedIn, async (req, res, next) => {
     try {
         if (req.query.search) {
             const { search } = req.query;
@@ -58,7 +60,7 @@ companyRoutes.get("/", async (req, res, next) => {
     }
 });
 
-companyRoutes.get("/:handle", async (req, res, next) => {
+companyRoutes.get("/:handle", ensureLoggedIn, async (req, res, next) => {
     try {
         const results = await db.query(
             `SELECT c.handle, c.name, c.num_employees, c.description, c.logo_url, j.id, j.title, j.salary, j.equity, j.date_posted
@@ -98,7 +100,7 @@ companyRoutes.get("/:handle", async (req, res, next) => {
     }
 });
 
-companyRoutes.post("/", async (req, res, next) => {
+companyRoutes.post("/", ensureAdmin, async (req, res, next) => {
     try {
         const result = jsonschema.validate(req.body, companySchema);
 
@@ -123,7 +125,7 @@ companyRoutes.post("/", async (req, res, next) => {
     }
 });
 
-companyRoutes.patch("/:handle", async (req, res, next) => {
+companyRoutes.patch("/:handle", ensureAdmin, async (req, res, next) => {
     try {
         const result = jsonschema.validate(req.body, companySchema);
         if (!result.valid) {
@@ -149,7 +151,7 @@ companyRoutes.patch("/:handle", async (req, res, next) => {
     }
 });
 
-companyRoutes.delete("/:handle", async (req, res, next) => {
+companyRoutes.delete("/:handle", ensureAdmin, async (req, res, next) => {
     try {
         const { handle } = req.params;
         const results = await db.query(

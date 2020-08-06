@@ -6,7 +6,8 @@ const jsonschema = require("jsonschema");
 const usersSchema = require("../schemas/usersSchema.json");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { SECRET_KEY } = require("../config");
+const { SECRET_KEY, BCRYPT_WORK_FACTOR } = require("../config");
+const { ensureLoggedIn } = require("./middleware/ensureLoggedIn");
 const usersRoutes = new express.Router();
 
 usersRoutes.post("/", async (req, res, next) => {
@@ -19,7 +20,7 @@ usersRoutes.post("/", async (req, res, next) => {
         }
 
         const { username, password, first_name, last_name, email, photo_url, is_admin } = req.body;
-        const hashedPW = await bcrypt.hash(password, 12);
+        const hashedPW = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
         const results = await db.query(
             `INSERT INTO users ( username, password, first_name, last_name, email, photo_url, is_admin)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -67,7 +68,7 @@ usersRoutes.get("/:username", async (req, res, next) => {
     }
 });
 
-usersRoutes.patch("/:username", async (req, res, next) => {
+usersRoutes.patch("/:username", ensureLoggedIn, async (req, res, next) => {
     try {
         const result = jsonschema.validate(req.body, usersSchema);
         if (!result.valid) {
@@ -93,7 +94,7 @@ usersRoutes.patch("/:username", async (req, res, next) => {
     }
 });
 
-usersRoutes.delete("/:username", async (req, res, next) => {
+usersRoutes.delete("/:username", ensureLoggedIn, async (req, res, next) => {
     try {
         const { username } = req.params;
         const results = await db.query(

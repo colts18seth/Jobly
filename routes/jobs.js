@@ -4,12 +4,13 @@ const ExpressError = require("../helpers/expressError");
 const partialUpdate = require("../helpers/partialUpdate");
 const jsonschema = require("jsonschema");
 const jobsSchema = require("../schemas/jobsSchema.json");
+const { ensureAdmin } = require("./middleware/ensureAdmin");
+const { ensureLoggedIn } = require("./middleware/ensureLoggedIn");
 const jobsRoutes = new express.Router();
 
-jobsRoutes.post("/", async (req, res, next) => {
+jobsRoutes.post("/", ensureAdmin, async (req, res, next) => {
     try {
         const result = jsonschema.validate(req.body, jobsSchema);
-
         if (!result.valid) {
             let listOfErrors = result.errors.map(error => error.stack);
             let error = new ExpressError(listOfErrors, 400);
@@ -31,7 +32,7 @@ jobsRoutes.post("/", async (req, res, next) => {
     }
 });
 
-jobsRoutes.get("/", async (req, res, next) => {
+jobsRoutes.get("/", ensureLoggedIn, async (req, res, next) => {
     try {
         if (req.query.search) {
             const { search } = req.query;
@@ -71,7 +72,7 @@ jobsRoutes.get("/", async (req, res, next) => {
     }
 });
 
-jobsRoutes.get("/:id", async (req, res, next) => {
+jobsRoutes.get("/:id", ensureLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
         const results = await db.query(
@@ -89,7 +90,7 @@ jobsRoutes.get("/:id", async (req, res, next) => {
     }
 });
 
-jobsRoutes.patch("/:id", async (req, res, next) => {
+jobsRoutes.patch("/:id", ensureAdmin, async (req, res, next) => {
     try {
         const result = jsonschema.validate(req.body, jobsSchema);
         if (!result.valid) {
@@ -115,7 +116,7 @@ jobsRoutes.patch("/:id", async (req, res, next) => {
     }
 });
 
-jobsRoutes.delete("/:id", async (req, res, next) => {
+jobsRoutes.delete("/:id", ensureAdmin, async (req, res, next) => {
     try {
         const { id } = req.params;
         const results = await db.query(

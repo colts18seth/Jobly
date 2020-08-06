@@ -4,6 +4,8 @@ require("dotenv").config();
 
 const SECRET_KEY = process.env.SECRET_KEY || "test";
 
+const BCRYPT_WORK_FACTOR = 12;
+
 const PORT = +process.env.PORT || 3000;
 
 // database is:
@@ -15,13 +17,14 @@ const PORT = +process.env.PORT || 3000;
 let DB_URI;
 
 if (process.env.NODE_ENV === "test") {
-  DB_URI = "jobly-test";
+    DB_URI = "jobly-test";
 } else {
-  DB_URI = process.env.DATABASE_URL || "jobly";
+    DB_URI = process.env.DATABASE_URL || "jobly";
 }
 
 module.exports = {
-  SECRET_KEY,
-  PORT,
-  DB_URI
+    SECRET_KEY,
+    BCRYPT_WORK_FACTOR,
+    PORT,
+    DB_URI
 };
