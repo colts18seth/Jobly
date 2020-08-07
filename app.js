@@ -7,7 +7,7 @@ const companyRoutes = require("./routes/companies");
 const jobsRoutes = require("./routes/jobs");
 const usersRoutes = require("./routes/users");
 const loginRoute = require("./routes/login");
-const { auth } = require("./routes/middleware/auth");
+const { auth } = require("./middleware/auth");
 const app = express();
 
 app.use(express.json());

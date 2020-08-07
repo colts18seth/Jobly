@@ -4,8 +4,7 @@ const ExpressError = require("../helpers/expressError");
 const partialUpdate = require("../helpers/partialUpdate");
 const jsonschema = require("jsonschema");
 const jobsSchema = require("../schemas/jobsSchema.json");
-const { ensureAdmin } = require("./middleware/ensureAdmin");
-const { ensureLoggedIn } = require("./middleware/ensureLoggedIn");
+const { auth, ensureLoggedIn, ensureAdmin } = require("../middleware/auth");
 const jobsRoutes = new express.Router();
 
 jobsRoutes.post("/", ensureAdmin, async (req, res, next) => {

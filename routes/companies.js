@@ -4,8 +4,7 @@ const ExpressError = require("../helpers/expressError");
 const partialUpdate = require("../helpers/partialUpdate");
 const jsonschema = require("jsonschema");
 const companySchema = require("../schemas/companySchema.json");
-const { ensureAdmin } = require("./middleware/ensureAdmin");
-const { ensureLoggedIn } = require("./middleware/ensureLoggedIn");
+const { ensureAdmin, ensureLoggedIn } = require("../middleware/auth");
 const companyRoutes = new express.Router();
 
 companyRoutes.get("/", ensureLoggedIn, async (req, res, next) => {

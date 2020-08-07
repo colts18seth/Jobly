@@ -7,7 +7,7 @@ const usersSchema = require("../schemas/usersSchema.json");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { SECRET_KEY, BCRYPT_WORK_FACTOR } = require("../config");
-const { ensureLoggedIn } = require("./middleware/ensureLoggedIn");
+const { ensureCorrectUser } = require("../middleware/auth");
 const usersRoutes = new express.Router();
 
 usersRoutes.post("/", async (req, res, next) => {
@@ -30,7 +30,7 @@ usersRoutes.post("/", async (req, res, next) => {
         let payload = { user: results.rows[0] };
         let token = jwt.sign(payload, SECRET_KEY)
 
-        return res.status(201).json({ token: token });
+        return res.status(201).json({ _token: token });
     }
     catch (err) {
         return next(err);
@@ -68,8 +68,13 @@ usersRoutes.get("/:username", async (req, res, next) => {
     }
 });
 
-usersRoutes.patch("/:username", ensureLoggedIn, async (req, res, next) => {
+usersRoutes.patch("/:username", async (req, res, next) => {
     try {
+        if (req.user.user.username != req.params.username) {
+            const err = new ExpressError("Unauthorized", 401);
+            return next(err);
+        }
+
         const result = jsonschema.validate(req.body, usersSchema);
         if (!result.valid) {
             let listOfErrors = result.errors.map(error => error.stack);
@@ -94,7 +99,7 @@ usersRoutes.patch("/:username", ensureLoggedIn, async (req, res, next) => {
     }
 });
 
-usersRoutes.delete("/:username", ensureLoggedIn, async (req, res, next) => {
+usersRoutes.delete("/:username", ensureCorrectUser, async (req, res, next) => {
     try {
         const { username } = req.params;
         const results = await db.query(
