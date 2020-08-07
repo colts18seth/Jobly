@@ -24,7 +24,7 @@ function ensureLoggedIn(req, res, next) {
 }
 
 function ensureCorrectUser(req, res, next) {
-    if (req.user.user.username != req.params.username) {
+    if (!req.user || req.user.user.username != req.params.username) {
         const err = new ExpressError("Unauthorized", 401);
         return next(err);
     } else {
@@ -33,8 +33,7 @@ function ensureCorrectUser(req, res, next) {
 }
 
 function ensureAdmin(req, res, next) {
-    console.log(req);
-    if (!req.user || req.user.is_admin != "True") {
+    if (!req.user || !req.user.user.is_admin) {
         const err = new ExpressError("Unauthorized", 401);
         return next(err);
     } else {

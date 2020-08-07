@@ -68,13 +68,8 @@ usersRoutes.get("/:username", async (req, res, next) => {
     }
 });
 
-usersRoutes.patch("/:username", async (req, res, next) => {
+usersRoutes.patch("/:username", ensureCorrectUser, async (req, res, next) => {
     try {
-        if (req.user.user.username != req.params.username) {
-            const err = new ExpressError("Unauthorized", 401);
-            return next(err);
-        }
-
         const result = jsonschema.validate(req.body, usersSchema);
         if (!result.valid) {
             let listOfErrors = result.errors.map(error => error.stack);
