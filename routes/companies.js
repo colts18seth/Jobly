@@ -1,14 +1,15 @@
-const express = require("express");
-const db = require("../db");
-const ExpressError = require("../helpers/expressError");
-const partialUpdate = require("../helpers/partialUpdate");
 const jsonschema = require("jsonschema");
-const companySchema = require("../schemas/companySchema.json");
+const express = require("express");
 const { ensureAdmin, ensureLoggedIn } = require("../middleware/auth");
+const companySchema = require("../schemas/companySchema.json");
+const ExpressError = require("../helpers/expressError");
+const db = require("../db");
 const companyRoutes = new express.Router();
 
+// get all companies if user is logged in
 companyRoutes.get("/", ensureLoggedIn, async (req, res, next) => {
     try {
+        // search for single company with search param
         if (req.query.search) {
             const { search } = req.query;
             const results = await db.query(
@@ -18,6 +19,7 @@ companyRoutes.get("/", ensureLoggedIn, async (req, res, next) => {
             return res.json({ companies: results.rows });
         }
 
+        // search for companies with min_employees and max_employees params. these params can be used to limit the results to only those that have a num_employees that are between the params
         if (req.query.min_employees && req.query.max_employees) {
             const { min_employees, max_employees } = req.query;
             if (min_employees > max_employees) {
@@ -30,6 +32,7 @@ companyRoutes.get("/", ensureLoggedIn, async (req, res, next) => {
             return res.json({ companies: results.rows });
         }
 
+        // search for companies with num_employees >= the param value
         if (req.query.min_employees) {
             const { min_employees } = req.query;
             const results = await db.query(
@@ -39,6 +42,7 @@ companyRoutes.get("/", ensureLoggedIn, async (req, res, next) => {
             return res.json({ companies: results.rows });
         }
 
+        // search for companies with num_employees <= the param value
         if (req.query.max_employees) {
             const { max_employees } = req.query;
             const results = await db.query(
@@ -48,6 +52,7 @@ companyRoutes.get("/", ensureLoggedIn, async (req, res, next) => {
             return res.json({ companies: results.rows });
         }
 
+        // retur all companies
         const results = await db.query(
             `SELECT handle, name, num_employees, description, logo_url
             FROM companies`
@@ -59,15 +64,17 @@ companyRoutes.get("/", ensureLoggedIn, async (req, res, next) => {
     }
 });
 
+// get single company with the handle provided in params
 companyRoutes.get("/:handle", ensureLoggedIn, async (req, res, next) => {
     try {
+        const currentHandle = req.params.handle
         const results = await db.query(
             `SELECT c.handle, c.name, c.num_employees, c.description, c.logo_url, j.id, j.title, j.salary, j.equity, j.date_posted
             FROM companies AS c
             LEFT JOIN jobs AS j
             ON c.handle = j.company_handle
-            WHERE handle=$1
-            `, [req.params.handle.toUpperCase()]
+            WHERE handle ILIKE $1
+            `, [`${currentHandle}`]
         );
         if (results.rowCount === 0) {
             throw new ExpressError(`handle: "${req.params.handle}" doesn't exist`, 404);
@@ -99,6 +106,7 @@ companyRoutes.get("/:handle", ensureLoggedIn, async (req, res, next) => {
     }
 });
 
+// make new company *only as admin
 companyRoutes.post("/", ensureAdmin, async (req, res, next) => {
     try {
         const result = jsonschema.validate(req.body, companySchema);
@@ -124,6 +132,7 @@ companyRoutes.post("/", ensureAdmin, async (req, res, next) => {
     }
 });
 
+// update the company with handle provided in params
 companyRoutes.patch("/:handle", ensureAdmin, async (req, res, next) => {
     try {
         const result = jsonschema.validate(req.body, companySchema);
@@ -134,10 +143,14 @@ companyRoutes.patch("/:handle", ensureAdmin, async (req, res, next) => {
         }
 
         const { handle } = req.params;
-
-        const patchResults = partialUpdate("companies", req.body, "handle", handle.toUpperCase());
-
-        const results = await db.query(patchResults.query, patchResults.values);
+        const { name, num_employees, description, logo_url } = req.body;
+        const results = await db.query(
+            `UPDATE companies
+            SET name=$2, num_employees=$3, description=$4, logo_url=$5
+            WHERE handle ILIKE $1
+            RETURNING handle, name, num_employees, description, logo_url`,
+            [`${handle}`, name, num_employees, description, logo_url]
+        );
 
         if (results.rowCount === 0) {
             throw new ExpressError(`handle: "${handle}" doesn't exist`, 404);
@@ -150,13 +163,14 @@ companyRoutes.patch("/:handle", ensureAdmin, async (req, res, next) => {
     }
 });
 
+// delete the company with handle provided in params
 companyRoutes.delete("/:handle", ensureAdmin, async (req, res, next) => {
     try {
         const { handle } = req.params;
         const results = await db.query(
             `DELETE FROM companies
-            WHERE handle=$1`,
-            [handle.toUpperCase()]
+            WHERE handle ILIKE $1`,
+            [`${handle}`]
         );
         if (results.rowCount === 0) {
             throw new ExpressError(`handle: "${req.params.handle}" doesn't exist`, 404);

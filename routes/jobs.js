@@ -1,13 +1,14 @@
 
-const express = require("express");
-const db = require("../db");
-const ExpressError = require("../helpers/expressError");
-const partialUpdate = require("../helpers/partialUpdate");
 const jsonschema = require("jsonschema");
-const jobsSchema = require("../schemas/jobsSchema.json");
+const express = require("express");
 const { auth, ensureLoggedIn, ensureAdmin } = require("../middleware/auth");
+const partialUpdate = require("../helpers/partialUpdate");
+const jobsSchema = require("../schemas/jobsSchema.json");
+const ExpressError = require("../helpers/expressError");
+const db = require("../db");
 const jobsRoutes = new express.Router();
 
+// make new job *only as admin
 jobsRoutes.post("/", ensureAdmin, async (req, res, next) => {
     try {
         const result = jsonschema.validate(req.body, jobsSchema);
@@ -32,8 +33,10 @@ jobsRoutes.post("/", ensureAdmin, async (req, res, next) => {
     }
 });
 
+// get jobs *only if logged in
 jobsRoutes.get("/", ensureLoggedIn, async (req, res, next) => {
     try {
+        // get jobs by search term passed in params
         if (req.query.search) {
             const { search } = req.query;
             const results = await db.query(
@@ -43,6 +46,7 @@ jobsRoutes.get("/", ensureLoggedIn, async (req, res, next) => {
             return res.json({ jobs: results.rows });
         }
 
+        // get jobs by min_salary passed in params
         if (req.query.min_salary) {
             const { min_salary } = req.query;
             const results = await db.query(
@@ -52,6 +56,7 @@ jobsRoutes.get("/", ensureLoggedIn, async (req, res, next) => {
             return res.json({ jobs: results.rows });
         }
 
+        // get jobs by min_equity passed in params
         if (req.query.min_equity) {
             const { min_equity } = req.query;
             const results = await db.query(
@@ -61,6 +66,7 @@ jobsRoutes.get("/", ensureLoggedIn, async (req, res, next) => {
             return res.json({ jobs: results.rows });
         }
 
+        // get all jobs
         const results = await db.query(
             `SELECT id, title, salary, equity, company_handle, date_posted
             FROM jobs`
@@ -72,6 +78,7 @@ jobsRoutes.get("/", ensureLoggedIn, async (req, res, next) => {
     }
 });
 
+// get job by id passed in params
 jobsRoutes.get("/:id", ensureLoggedIn, async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -90,6 +97,7 @@ jobsRoutes.get("/:id", ensureLoggedIn, async (req, res, next) => {
     }
 });
 
+// update job by id passed in params
 jobsRoutes.patch("/:id", ensureAdmin, async (req, res, next) => {
     try {
         const result = jsonschema.validate(req.body, jobsSchema);
@@ -100,9 +108,7 @@ jobsRoutes.patch("/:id", ensureAdmin, async (req, res, next) => {
         }
 
         const { id } = req.params;
-
         const patchResults = partialUpdate("jobs", req.body, "id", id);
-
         const results = await db.query(patchResults.query, patchResults.values);
 
         if (results.rowCount === 0) {
@@ -116,6 +122,7 @@ jobsRoutes.patch("/:id", ensureAdmin, async (req, res, next) => {
     }
 });
 
+// get job by id passed in params
 jobsRoutes.delete("/:id", ensureAdmin, async (req, res, next) => {
     try {
         const { id } = req.params;

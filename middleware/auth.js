@@ -1,7 +1,8 @@
-const { SECRET_KEY } = require("../config");
 const jwt = require("jsonwebtoken");
 const ExpressError = require("../helpers/expressError");
+const { SECRET_KEY } = require("../config");
 
+// check if body contains token. If so, verify token and add token contents to req.user
 function auth(req, res, next) {
     try {
         const tokenFromBody = req.body._token;
@@ -14,6 +15,7 @@ function auth(req, res, next) {
     }
 }
 
+// if auth found token in body, user is logged in
 function ensureLoggedIn(req, res, next) {
     if (!req.user) {
         const err = new ExpressError("Unauthorized", 401);
@@ -23,6 +25,7 @@ function ensureLoggedIn(req, res, next) {
     }
 }
 
+// check if auth found token in body and the username matches the username passed in the params
 function ensureCorrectUser(req, res, next) {
     if (!req.user || req.user.user.username != req.params.username) {
         const err = new ExpressError("Unauthorized", 401);
@@ -32,6 +35,7 @@ function ensureCorrectUser(req, res, next) {
     }
 }
 
+// check if auth found token in body and the user is admin
 function ensureAdmin(req, res, next) {
     if (!req.user || !req.user.user.is_admin) {
         const err = new ExpressError("Unauthorized", 401);

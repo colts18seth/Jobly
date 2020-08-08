@@ -1,13 +1,14 @@
-const express = require("express");
-const db = require("../db");
-const ExpressError = require("../helpers/expressError");
 const jsonschema = require("jsonschema");
-const loginSchema = require("../schemas/loginSchema.json");
-const loginRoute = new express.Router();
-const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const express = require("express");
+const bcrypt = require("bcrypt");
+const loginSchema = require("../schemas/loginSchema.json");
+const ExpressError = require("../helpers/expressError");
 const { SECRET_KEY } = require("../config");
+const db = require("../db");
+const loginRoute = new express.Router();
 
+// login in user
 loginRoute.post("/", async (req, res, next) => {
     try {
         const result = jsonschema.validate(req.body, loginSchema);
@@ -24,12 +25,10 @@ loginRoute.post("/", async (req, res, next) => {
             WHERE username = $1`,
             [username]
         );
-        const user = results.rows[0];
-        console.log(password)
-        console.log(user.password)
-        if (user) {
-            if (await bcrypt.compare(password, user.password) === true) {
-                let _token = jwt.sign({ user }, SECRET_KEY);
+        let payload = { user: results.rows[0] };
+        if (payload) {
+            if (await bcrypt.compare(password, payload.user.password) === true) {
+                let _token = jwt.sign(payload, SECRET_KEY);
                 return res.json({ _token });
             }
         }

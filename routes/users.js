@@ -1,15 +1,15 @@
-const express = require("express");
-const db = require("../db");
-const ExpressError = require("../helpers/expressError");
-const partialUpdate = require("../helpers/partialUpdate");
 const jsonschema = require("jsonschema");
-const usersSchema = require("../schemas/usersSchema.json");
-const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const express = require("express");
+const bcrypt = require("bcrypt");
 const { SECRET_KEY, BCRYPT_WORK_FACTOR } = require("../config");
 const { ensureCorrectUser } = require("../middleware/auth");
+const usersSchema = require("../schemas/usersSchema.json");
+const ExpressError = require("../helpers/expressError");
+const db = require("../db");
 const usersRoutes = new express.Router();
 
+// make new user
 usersRoutes.post("/", async (req, res, next) => {
     try {
         const result = jsonschema.validate(req.body, usersSchema);
@@ -24,7 +24,7 @@ usersRoutes.post("/", async (req, res, next) => {
         const results = await db.query(
             `INSERT INTO users ( username, password, first_name, last_name, email, photo_url, is_admin)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING username, is_admin`,
+            RETURNING username, first_name, last_name, email, photo_url, is_admin`,
             [username, hashedPW, first_name, last_name, email, photo_url, is_admin]
         );
         let payload = { user: results.rows[0] };
@@ -37,6 +37,7 @@ usersRoutes.post("/", async (req, res, next) => {
     }
 });
 
+// get all users
 usersRoutes.get("/", async (req, res, next) => {
     try {
         const results = await db.query(
@@ -50,6 +51,7 @@ usersRoutes.get("/", async (req, res, next) => {
     }
 });
 
+// get user by username passed in params
 usersRoutes.get("/:username", async (req, res, next) => {
     try {
         const { username } = req.params;
@@ -68,6 +70,7 @@ usersRoutes.get("/:username", async (req, res, next) => {
     }
 });
 
+// update user with username passed in params
 usersRoutes.patch("/:username", ensureCorrectUser, async (req, res, next) => {
     try {
         const result = jsonschema.validate(req.body, usersSchema);
@@ -76,12 +79,16 @@ usersRoutes.patch("/:username", ensureCorrectUser, async (req, res, next) => {
             let error = new ExpressError(listOfErrors, 400);
             return next(error);
         }
-
-        const { username } = req.params;
-
-        const patchResults = partialUpdate("users", req.body, "username", username);
-
-        const results = await db.query(patchResults.query, patchResults.values);
+        const { password, first_name, last_name, email, photo_url, is_admin } = req.body;
+        const hashedPW = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
+        const currentUsername = req.params.username;
+        const results = await db.query(
+            `UPDATE users
+            SET password=$2, first_name=$3, last_name=$4, email=$5, photo_url=$6, is_admin=$7
+            WHERE username=$1
+            RETURNING username, first_name, last_name, email, photo_url, is_admin`,
+            [currentUsername, hashedPW, first_name, last_name, email, photo_url, is_admin]
+        );
 
         if (results.rowCount === 0) {
             throw new ExpressError(`username: "${username}" doesn't exist`, 404);
@@ -94,6 +101,7 @@ usersRoutes.patch("/:username", ensureCorrectUser, async (req, res, next) => {
     }
 });
 
+// delete user with username passed in params
 usersRoutes.delete("/:username", ensureCorrectUser, async (req, res, next) => {
     try {
         const { username } = req.params;
