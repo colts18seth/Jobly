@@ -6,7 +6,7 @@ const db = require("../../db");
 beforeAll(async function () {
     await db.query("DELETE FROM users");
 })
-
+//add test!!!
 // populate with simple data before running test
 beforeAll(async function () {
     await request(app)
