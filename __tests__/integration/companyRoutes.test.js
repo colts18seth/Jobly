@@ -6,10 +6,29 @@ const db = require("../../db");
 // clear database before runing test
 beforeAll(async function () {
     await db.query("DELETE FROM companies");
+    await db.query("DELETE FROM users");
 })
 
 // populate with simple data before running test
 beforeAll(async function () {
+    await request(app)
+        .post("/users")
+        .send({
+            "username": "admin",
+            "password": "admin",
+            "first_name": "admin",
+            "last_name": "admin",
+            "email": "admin@gmail.com",
+            "photo_url": "admin.url",
+            "is_admin": "True"
+        });
+    const login = await request(app)
+        .post("/login")
+        .send({
+            "username": "admin",
+            "password": "admin"
+        })
+    const token = login.body._token
     await request(app)
         .post("/companies")
         .send({
@@ -17,7 +36,8 @@ beforeAll(async function () {
             "name": "Microsoft",
             "num_employees": 10000,
             "description": "Microsoft everything",
-            "logo_url": "microsoft.com"
+            "logo_url": "microsoft.com",
+            "_token": token
         });
     await request(app)
         .post("/companies")
@@ -26,7 +46,8 @@ beforeAll(async function () {
             "name": "Apple",
             "num_employees": 10000,
             "description": "Apple everything",
-            "logo_url": "apple.com"
+            "logo_url": "apple.com",
+            "_token": token
         });
     await request(app)
         .post("/companies")
@@ -35,7 +56,8 @@ beforeAll(async function () {
             "name": "Tesla",
             "num_employees": 1000,
             "description": "Tesla everything",
-            "logo_url": "tesla.com"
+            "logo_url": "tesla.com",
+            "_token": token
         });
     await request(app)
         .post("/companies")
@@ -44,13 +66,21 @@ beforeAll(async function () {
             "name": "Amazon",
             "num_employees": 100000,
             "description": "Amazon everything",
-            "logo_url": "amazon.com"
+            "logo_url": "amazon.com",
+            "_token": token
         });
 });
 
 // test post route
 describe("POST /companies", () => {
     test("make new company", async function () {
+        const login = await request(app)
+            .post("/login")
+            .send({
+                "username": "admin",
+                "password": "admin"
+            })
+        const token = login.body._token
         const postResults = await request(app)
             .post("/companies")
             .send({
@@ -58,12 +88,16 @@ describe("POST /companies", () => {
                 "name": "Google",
                 "num_employees": 100,
                 "description": "Google everything",
-                "logo_url": "google.com"
+                "logo_url": "google.com",
+                "_token": token
             });
         expect(postResults.statusCode).toBe(201);
         // get /companies to check if post route worked
         const getResults = await request(app)
             .get("/companies")
+            .send({
+                "_token": token
+            })
         expect(getResults.statusCode).toBe(200);
         expect(getResults.body).toEqual(
             {
@@ -81,8 +115,18 @@ describe("POST /companies", () => {
 // test get route and query string filters
 describe("GET /companies", () => {
     test("get all companies", async function () {
+        const login = await request(app)
+            .post("/login")
+            .send({
+                "username": "admin",
+                "password": "admin"
+            })
+        const token = login.body._token
         const results = await request(app)
             .get("/companies")
+            .send({
+                "_token": token
+            })
         expect(results.statusCode).toBe(200);
         expect(results.body).toEqual(
             {
@@ -128,8 +172,18 @@ describe("GET /companies", () => {
 
     test("get all companies that match query string 'search'",
         async function () {
+            const login = await request(app)
+                .post("/login")
+                .send({
+                    "username": "admin",
+                    "password": "admin"
+                })
+            const token = login.body._token
             const results = await request(app)
                 .get("/companies?search=m")
+                .send({
+                    "_token": token
+                })
             expect(results.statusCode).toBe(200);
             expect(results.body).toEqual(
                 {
@@ -154,8 +208,18 @@ describe("GET /companies", () => {
 
     test("get all companies that >= query string 'min_employees'",
         async function () {
+            const login = await request(app)
+                .post("/login")
+                .send({
+                    "username": "admin",
+                    "password": "admin"
+                })
+            const token = login.body._token
             const results = await request(app)
                 .get("/companies?min_employees=10000")
+                .send({
+                    "_token": token
+                })
             expect(results.statusCode).toBe(200);
             expect(results.body).toEqual(
                 {
@@ -187,8 +251,18 @@ describe("GET /companies", () => {
 
     test("get all companies that <= query string 'max_employees'",
         async function () {
+            const login = await request(app)
+                .post("/login")
+                .send({
+                    "username": "admin",
+                    "password": "admin"
+                })
+            const token = login.body._token
             const results = await request(app)
                 .get("/companies?max_employees=1000")
+                .send({
+                    "_token": token
+                })
             expect(results.statusCode).toBe(200);
             expect(results.body).toEqual(
                 {
@@ -212,12 +286,22 @@ describe("GET /companies", () => {
         });
 });
 
-// test to get single company from handle
+// // test to get single company from handle
 describe("GET /companies/:handle", () => {
     test("get company thats handle is passed in the params",
         async function () {
+            const login = await request(app)
+                .post("/login")
+                .send({
+                    "username": "admin",
+                    "password": "admin"
+                })
+            const token = login.body._token
             const results = await request(app)
                 .get("/companies/goog")
+                .send({
+                    "_token": token
+                })
             expect(results.statusCode).toBe(200);
             expect(results.body).toEqual(
                 {
@@ -233,10 +317,17 @@ describe("GET /companies/:handle", () => {
         });
 });
 
-// test route to patch company
+// // test route to patch company
 describe("PATCH /companies/:handle", () => {
     test("patch company thats handle is passed in the params",
         async function () {
+            const login = await request(app)
+                .post("/login")
+                .send({
+                    "username": "admin",
+                    "password": "admin"
+                })
+            const token = login.body._token
             const patchResults = await request(app)
                 .patch("/companies/goog")
                 .send({
@@ -244,7 +335,8 @@ describe("PATCH /companies/:handle", () => {
                     "name": "Google",
                     "num_employees": 100,
                     "description": "Updated Description",
-                    "logo_url": "google.com"
+                    "logo_url": "google.com",
+                    "_token": token
                 });
             expect(patchResults.statusCode).toBe(200);
             expect(patchResults.body).toEqual(
@@ -260,6 +352,9 @@ describe("PATCH /companies/:handle", () => {
                 });
             const getResults = await request(app)
                 .get("/companies/goog")
+                .send({
+                    "_token": token
+                })
             expect(getResults.statusCode).toBe(200);
             expect(getResults.body).toEqual(
                 {
@@ -275,12 +370,22 @@ describe("PATCH /companies/:handle", () => {
         });
 });
 
-// test route to delete company
+// // test route to delete company
 describe("DELETE /companies/:handle", () => {
     test("delete company thats handle is passed in the params",
         async function () {
+            const login = await request(app)
+                .post("/login")
+                .send({
+                    "username": "admin",
+                    "password": "admin"
+                })
+            const token = login.body._token
             const deleteResults = await request(app)
                 .delete("/companies/goog")
+                .send({
+                    "_token": token
+                })
             expect(deleteResults.statusCode).toBe(200);
             expect(deleteResults.body).toEqual(
                 {
@@ -288,6 +393,9 @@ describe("DELETE /companies/:handle", () => {
                 });
             const getResults = await request(app)
                 .get("/companies/goog")
+                .send({
+                    "_token": token
+                })
             expect(getResults.statusCode).toBe(404);
             expect(getResults.body).toEqual(
                 {

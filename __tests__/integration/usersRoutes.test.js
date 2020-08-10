@@ -166,47 +166,48 @@ describe("GET /users/:username", () => {
 describe("PATCH /user/:username", () => {
     test("patch user thats username is passed in the params",
         async function () {
-            const getOneResult = await db.query(
-                `SELECT username
-                FROM users
-                LIMIT 1`
-            );
-            const username = getOneResult.rows[0].username;
-            const patchResults = await request(app)
-                .patch(`/users/${username}`)
+            const loginUser = await request(app)
+                .post(`/login`)
                 .send({
                     "username": "colts18seth",
-                    "password": "password1",
-                    "first_name": "Seth1",
-                    "last_name": "Laf1",
-                    "email": "colts@gmail.com1",
-                    "photo_url": "photo.url1",
-                    "is_admin": "False"
+                    "password": "password"
+                })
+            let token = loginUser.body._token
+            const patchResults = await request(app)
+                .patch(`/users/colts18seth`)
+                .send({
+                    "username": "colts18seth",
+                    "password": "password",
+                    "first_name": "Seth Updated",
+                    "last_name": "Laf Updated",
+                    "email": "colts@gmail.com",
+                    "photo_url": "photo.url",
+                    "is_admin": "True",
+                    "_token": token
                 });
             expect(patchResults.statusCode).toBe(200);
             expect(patchResults.body).toEqual(
                 {
                     "user": {
                         "username": "colts18seth",
-                        "password": "password1",
-                        "first_name": "Seth1",
-                        "last_name": "Laf1",
-                        "email": "colts@gmail.com1",
-                        "photo_url": "photo.url1",
+                        "first_name": "Seth Updated",
+                        "last_name": "Laf Updated",
+                        "email": "colts@gmail.com",
+                        "photo_url": "photo.url",
                         "is_admin": expect.anything()
                     }
                 });
             const getResults = await request(app)
-                .get(`/users/${username}`)
+                .get(`/users/colts18seth`)
             expect(getResults.statusCode).toBe(200);
             expect(getResults.body).toEqual(
                 {
                     "user": {
                         "username": "colts18seth",
-                        "first_name": "Seth1",
-                        "last_name": "Laf1",
-                        "email": "colts@gmail.com1",
-                        "photo_url": "photo.url1"
+                        "first_name": "Seth Updated",
+                        "last_name": "Laf Updated",
+                        "email": "colts@gmail.com",
+                        "photo_url": "photo.url"
                     }
                 });
         });
@@ -216,26 +217,30 @@ describe("PATCH /user/:username", () => {
 describe("DELETE /users/:username", () => {
     test("delete user thats username is passed in the params",
         async function () {
-            const getOneResult = await db.query(
-                `SELECT username
-                FROM users
-                LIMIT 1`
-            );
-            const username = getOneResult.rows[0].username;
+            const loginUser = await request(app)
+                .post(`/login`)
+                .send({
+                    "username": "colts18seth",
+                    "password": "password"
+                })
+            let token = loginUser.body._token
             const deleteResults = await request(app)
-                .delete(`/users/${username}`)
+                .delete(`/users/colts18seth`)
+                .send({
+                    "_token": token
+                })
             expect(deleteResults.statusCode).toBe(200);
             expect(deleteResults.body).toEqual(
                 {
                     "message": "User deleted"
                 });
             const getResults = await request(app)
-                .get(`/users/${username}`)
+                .get(`/users/colts18seth`)
             expect(getResults.statusCode).toBe(404);
             expect(getResults.body).toEqual(
                 {
                     "status": 404,
-                    "message": `username: \"${username}\" doesn't exist`
+                    "message": `username: \"colts18seth\" doesn't exist`
                 });
         });
 });
