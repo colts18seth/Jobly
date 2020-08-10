@@ -5,32 +5,12 @@ const db = require("../../db");
 
 beforeAll(async function () {
     await db.query("DELETE FROM users");
-})
-//add test!!!
-// populate with simple data before running test
+    await db.query("DELETE FROM jobs");
+    await db.query("DELETE FROM companies");
+});
+
+// populate with test data before running test
 beforeAll(async function () {
-    await request(app)
-        .post("/users")
-        .send({
-            "username": "colts18seth",
-            "password": "password",
-            "first_name": "Seth",
-            "last_name": "Laf",
-            "email": "colts@gmail.com",
-            "photo_url": "photo.url",
-            "is_admin": "False"
-        });
-    await request(app)
-        .post("/users")
-        .send({
-            "username": "colts18seth2",
-            "password": "password2",
-            "first_name": "Seth2",
-            "last_name": "Laf2",
-            "email": "colts@gmail.com2",
-            "photo_url": "photo.url2",
-            "is_admin": "False"
-        });
     await request(app)
         .post("/users")
         .send({
@@ -38,61 +18,164 @@ beforeAll(async function () {
             "password": "admin",
             "first_name": "admin",
             "last_name": "admin",
-            "email": "admin.com",
+            "email": "admin@gmail.com",
             "photo_url": "admin.url",
             "is_admin": "True"
         });
+    await request(app)
+        .post("/users")
+        .send({
+            "username": "test",
+            "password": "test",
+            "first_name": "test",
+            "last_name": "test",
+            "email": "test@gmail.com",
+            "photo_url": "test.url",
+            "is_admin": "False"
+        });
+    const results = await request(app)
+        .post("/login")
+        .send({
+            "username": "admin",
+            "password": "admin"
+        });
+    await request(app)
+        .post("/companies")
+        .send({
+            "handle": "MS",
+            "name": "Microsoft",
+            "num_employees": 10000,
+            "description": "Microsoft everything",
+            "logo_url": "microsoft.com",
+            "_token": results.body._token
+        });
+    await request(app)
+        .post("/companies")
+        .send({
+            "handle": "APL",
+            "name": "Apple",
+            "num_employees": 20000,
+            "description": "Apple everything",
+            "logo_url": "apple.com",
+            "_token": results.body._token
+        });
+    await request(app)
+        .post("/jobs")
+        .send({
+            "title": "back-end engineer",
+            "salary": 75000,
+            "equity": 0.08,
+            "company_handle": "MS",
+            "_token": results.body._token
+        });
+    await request(app)
+        .post("/jobs")
+        .send({
+            "title": "front-end engineer",
+            "salary": 80000,
+            "equity": 0.06,
+            "company_handle": "APL",
+            "_token": results.body._token
+        });
 });
 
-// test post route
-describe("POST /users", () => {
-    test("make new user", async function () {
-        const postResults = await request(app)
-            .post("/users")
+// test login route
+describe("POST /login", () => {
+    test("login user", async function () {
+        const results = await request(app)
+            .post("/login")
             .send({
-                "username": "colts18seth4",
-                "password": "password4",
-                "first_name": "Seth4",
-                "last_name": "Laf4",
-                "email": "colts@gmail.com4",
-                "photo_url": "photo.url4",
+                "username": "test",
+                "password": "test"
+            });
+        expect(results.statusCode).toBe(200);
+        const resultsFail = await request(app)
+            .post("/login")
+            .send({
+                "username": "test",
+                "password": "admin"
+            });
+        expect(resultsFail.statusCode).toBe(400);
+    });
+});
+
+// middleware testing
+describe("testing middleware", () => {
+    test("ensureLoggedIn", async function () {
+        const testLogin = await request(app)
+            .post("/login")
+            .send({
+                "username": "test",
+                "password": "test"
+            });
+        expect(testLogin.statusCode).toBe(200);
+        const patchTest = await request(app)
+            .patch("/users/test")
+            .send({
+                "username": "test",
+                "password": "test",
+                "first_name": "test-update",
+                "last_name": "test-update",
+                "email": "test@gmail.com",
+                "photo_url": "test.url",
+                "is_admin": "False",
+                "_token": testLogin.body._token
+            });
+        expect(patchTest.statusCode).toBe(200);
+        const patchFail = await request(app)
+            .patch("/users/test")
+            .send({
+                "username": "test",
+                "password": "test",
+                "first_name": "test-update",
+                "last_name": "test-update",
+                "email": "test@gmail.com",
+                "photo_url": "test.url",
                 "is_admin": "False"
             });
-        expect(postResults.statusCode).toBe(201);
-        // get /users to check if post route worked
-        const getResults = await request(app)
-            .get("/users")
-        expect(getResults.statusCode).toBe(200);
-        expect(getResults.body).toEqual(
-            {
-                "users":
-                    expect.arrayContaining([
-                        expect.objectContaining({
-                            "username": "colts18seth",
-                            "first_name": "Seth",
-                            "last_name": "Laf",
-                            "email": "colts@gmail.com"
-                        }),
-                        expect.objectContaining({
-                            "username": "colts18seth2",
-                            "first_name": "Seth2",
-                            "last_name": "Laf2",
-                            "email": "colts@gmail.com2"
-                        }),
-                        expect.objectContaining({
-                            "username": "colts18seth3",
-                            "first_name": "Seth3",
-                            "last_name": "Laf3",
-                            "email": "colts@gmail.com3"
-                        }),
-                        expect.objectContaining({
-                            "username": "colts18seth4",
-                            "first_name": "Seth4",
-                            "last_name": "Laf4",
-                            "email": "colts@gmail.com4"
-                        })
-                    ])
-            }
-        )
-    })
-})
+        expect(patchFail.statusCode).toBe(401);
+    });
+
+    test("ensureAdmin", async function () {
+        try {
+            const testLogin = await request(app)
+                .post("/login")
+                .send({
+                    "username": "test",
+                    "password": "test"
+                });
+            expect(testLogin.statusCode).toBe(200);
+            const adminLogin = await request(app)
+                .post("/login")
+                .send({
+                    "username": "admin",
+                    "password": "admin"
+                });
+            expect(adminLogin.statusCode).toBe(200);
+            const resultsTest = await request(app)
+                .patch("/companies/APL")
+                .send({
+                    "handle": "APL",
+                    "name": "Apple",
+                    "num_employees": 20000,
+                    "description": "Apple everything updated",
+                    "logo_url": "apple.com",
+                    "_token": testLogin.body._token
+                });
+            expect(resultsTest.statusCode).toBe(401);
+            const resultsAdmin = await request(app)
+                .patch("/companies/APL")
+                .send({
+                    "handle": "APL",
+                    "name": "Apple",
+                    "num_employees": 20000,
+                    "description": "Apple everything updated",
+                    "logo_url": "apple.com",
+                    "_token": adminLogin.body._token
+                });
+            expect(resultsAdmin.statusCode).toBe(200);
+        } catch {
+            return
+        }
+    });
+});
