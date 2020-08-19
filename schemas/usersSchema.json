@@ -13,7 +13,7 @@
             "last_name": "Laf",
             "email": "colts@gmail.com",
             "photo_url": "photo.url",
-            "is_admin": "False"
+            "is_admin": false
         }
     ],
     "required": [
@@ -22,8 +22,7 @@
         "first_name",
         "last_name",
         "email",
-        "photo_url",
-        "is_admin"
+        "photo_url"
     ],
     "properties": {
         "username": {
@@ -88,12 +87,12 @@
         },
         "is_admin": {
             "$id": "#/properties/is_admin",
-            "type": "string",
+            "type": "boolean",
             "title": "The is_admin schema",
             "description": "An explanation about the purpose of this instance.",
             "default": "",
             "examples": [
-                "False"
+                false
             ]
         }
     },
