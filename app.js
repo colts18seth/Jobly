@@ -9,8 +9,10 @@ const usersRoutes = require("./routes/users");
 const loginRoute = require("./routes/login");
 const { auth } = require("./middleware/auth");
 const app = express();
+const cors = require("cors");
 
 app.use(express.json());
+app.use(cors());
 app.use(auth);
 app.use("/companies", companyRoutes)
 app.use("/jobs", jobsRoutes)
